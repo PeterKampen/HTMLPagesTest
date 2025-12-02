@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lung Cancer Risk Calculator</title>
+    <style>
+        /* General Page Styling */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f8;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            background-color: white;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: #0056b3;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        /* Accordion Styling */
+        .accordion {
+            background-color: #eee;
+            color: #444;
+            cursor: pointer;
+            padding: 18px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 18px;
+            font-weight: 600;
+            transition: 0.4s;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .active, .accordion:hover {
+            background-color: #ccc;
+        }
+
+        .accordion:after {
+            content: '\002B'; /* Plus sign */
+            color: #777;
+            font-weight: bold;
+            float: right;
+            margin-left: 5px;
+        }
+
+        .active:after {
+            content: "\2212"; /* Minus sign */
+        }
+
+        .panel {
+            padding: 0 18px;
+            background-color: white;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease-out;
+        }
+
+        .panel-content {
+            padding: 20px 0;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        input[type="number"], 
+        input[type="text"], 
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box; /* Ensures padding doesn't affect width */
+        }
+
+        /* Button Styling */
+        .btn-calculate {
+            width: 100%;
+            background-color: #28a745;
+            color: white;
+            padding: 15px;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-calculate:hover {
+            background-color: #218838;
+        }
+
+        /* Hidden Sections */
+        .hidden {
+            display: none;
+        }
+        
+        #result {
+            padding: 20px;
+            text-align: center;
+            font-weight: bold;
+            background-color: #e8f5e9;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Lung Cancer Risk Calculator</h1>
+    </header>
+
+    <form id="riskForm">
+        <button type="button" class="accordion">General Information</button>
+        <div class="panel">
+            <div class="panel-content">
+                <div class="form-group">
+                    <label for="age">Age</label>
+                    <input type="number" id="age" name="age" placeholder="Enter your age" required>
+                </div>
+                <div class="form-group">
+                    <label for="gender">Gender</label>
+                    <select id="gender" name="gender">
+                        <option value="M">Male</option>
+                        <option value="F">Female</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="education">Level of Education</label>
+                    <select id="education" name="education">
+                        <option value="highschool">High School</option>
+                        <option value="university">University</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" class="accordion">Smoking History</button>
+        <div class="panel">
+            <div class="panel-content">
+                <div class="form-group">
+                    <label for="smokingStatus">Smoking Status</label>
+                    <select id="smokingStatus" name="smokingStatus" onchange="toggleSmokingFields()">
+                        <option value="never">Never Smoked</option>
+                        <option value="current">Current Smoker</option>
+                        <option value="former">Used to Smoke</option>
+                    </select>
+                </div>
+
+                <div id="smokingDetails" class="hidden">
+                    <div class="form-group">
+                        <label for="yearsSinceStart">Years since start of smoking</label>
+                        <input type="number" id="yearsSinceStart" name="yearsSinceStart">
+                    </div>
+                    <div class="form-group">
+                        <label for="yearsSinceEnd">Years since end of smoking</label>
+                        <input type="number" id="yearsSinceEnd" name="yearsSinceEnd">
+                        <small style="color: #666;">(0 if current smoker)</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="cigPerDay">Cigarettes smoked per day</label>
+                        <input type="number" id="cigPerDay" name="cigPerDay">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" class="accordion">Bloodwork</button>
+        <div class="panel">
+            <div class="panel-content">
+                <div class="form-group">
+                    <label for="ahrr">AHRR Methylation Level</label>
+                    <input type="number" step="any" id="ahrr" name="ahrr" placeholder="Enter value">
+                </div>
+                <div class="form-group">
+                    <label for="platelet">Platelet Count</label>
+                    <input type="number" id="platelet" name="platelet" placeholder="Enter value">
+                </div>
+                <div class="form-group">
+                    <label for="crp">CRP (C-Reactive Protein)</label>
+                    <input type="number" step="any" id="crp" name="crp" placeholder="Enter value">
+                </div>
+            </div>
+        </div>
+
+        <button type="button" class="accordion">Lifestyle</button>
+        <div class="panel">
+            <div class="panel-content">
+                <p>No specific lifestyle inputs were provided in the requirements. This section is ready for future inputs.</p>
+                </div>
+        </div>
+
+        <button type="button" class="btn-calculate" onclick="calculateRisk()">Calculate Risk</button>
+    </form>
+    
+    <div id="result"></div>
+
+</div>
+
+<script>
+    // 1. Accordion Functionality
+    var acc = document.getElementsByClassName("accordion");
+    var i;
+
+    for (i = 0; i < acc.length; i++) {
+        acc[i].addEventListener("click", function() {
+            this.classList.toggle("active");
+            var panel = this.nextElementSibling;
+            if (panel.style.maxHeight) {
+                panel.style.maxHeight = null;
+            } else {
+                panel.style.maxHeight = panel.scrollHeight + "px";
+            } 
+        });
+    }
+
+    // 2. Logic to handle Smoking Conditional Fields
+    function toggleSmokingFields() {
+        var status = document.getElementById("smokingStatus").value;
+        var detailsDiv = document.getElementById("smokingDetails");
+        var yearsEndInput = document.getElementById("yearsSinceEnd");
+
+        if (status === "never") {
+            detailsDiv.classList.add("hidden");
+        } else {
+            detailsDiv.classList.remove("hidden");
+            
+            // Adjust the accordion height dynamically because we just revealed content
+            var panel = detailsDiv.closest(".panel");
+            if(panel.style.maxHeight){
+                panel.style.maxHeight = panel.scrollHeight + "px";
+            }
+
+            if (status === "current") {
+                yearsEndInput.value = 0;
+                yearsEndInput.readOnly = true; // User cannot edit this if they are a current smoker
+                yearsEndInput.style.backgroundColor = "#e9ecef";
+            } else {
+                yearsEndInput.value = "";
+                yearsEndInput.readOnly = false;
+                yearsEndInput.style.backgroundColor = "white";
+            }
+        }
+    }
+
+    // 3. Calculation Logic (Placeholder)
+    function calculateRisk() {
+        // Gathering inputs
+        const age = document.getElementById('age').value;
+        const gender = document.getElementById('gender').value;
+        const education = document.getElementById('education').value;
+        const smokingStatus = document.getElementById('smokingStatus').value;
+        
+        // Smoking Details
+        let yearsStart = 0;
+        let yearsEnd = 0;
+        let cigs = 0;
+        
+        if(smokingStatus !== 'never') {
+             yearsStart = document.getElementById('yearsSinceStart').value;
+             yearsEnd = document.getElementById('yearsSinceEnd').value;
+             cigs = document.getElementById('cigPerDay').value;
+        }
+
+        // Bloodwork
+        const ahrr = document.getElementById('ahrr').value;
+        const platelet = document.getElementById('platelet').value;
+        const crp = document.getElementById('crp').value;
+
+        // --- MATH GOES HERE ---
+        // Since you did not provide the mathematical formula, 
+        // I am logging the values to the console and showing an alert.
+        // You must replace the lines below with your specific algorithm.
+        
+        console.log("Data gathered:", {age, gender, education, smokingStatus, yearsStart, yearsEnd, cigs, ahrr, platelet, crp});
+
+        const resultDiv = document.getElementById('result');
+        resultDiv.style.display = "block";
+        resultDiv.innerText = "Calculation Complete! (See code to insert formula)";
+        
+        // Example of how you might calculate it:
+        // let riskScore = (age * 0.5) + (cigs * 2);
+        // resultDiv.innerText = "Your calculated risk score is: " + riskScore;
+    }
+</script>
+
+</body>
+</html>
