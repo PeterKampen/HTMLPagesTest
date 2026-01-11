@@ -250,37 +250,99 @@
             margin-bottom: 1.5rem;
         }
 
-        .risk-bar-container {
-            background: #e2e8f0;
-            border-radius: 12px;
-            height: 24px;
-            overflow: hidden;
-            margin: 1.5rem 0;
+        /* Logarithmic Risk Bar with Gradient */
+        .log-risk-bar-container {
+            position: relative;
+            height: 30px;
+            border-radius: 8px;
+            margin: 1.5rem 0 0.5rem 0;
+            background: linear-gradient(to right,
+                #22c55e 0%,      /* Green - 0.001% */
+                #4ade80 12.5%,   /* Light green */
+                #a3e635 25%,     /* Yellow-green - 0.01% */
+                #facc15 37.5%,   /* Yellow - 0.1% */
+                #fbbf24 50%,     /* Amber - 1% */
+                #f97316 62.5%,   /* Orange - 2% */
+                #ef4444 75%,     /* Red - 4% */
+                #dc2626 87.5%,   /* Dark red - 6% */
+                #991b1b 100%     /* Very dark red - 10% */
+            );
+            overflow: visible;
         }
 
-        .risk-bar {
-            height: 100%;
-            border-radius: 12px;
-            transition: width 0.8s ease;
+        .log-risk-bar {
+            display: none;
         }
 
-        .risk-low { background: linear-gradient(90deg, #10b981, #34d399); }
-        .risk-moderate { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-        .risk-high { background: linear-gradient(90deg, #ef4444, #f87171); }
-        .risk-very-high { background: linear-gradient(90deg, #7f1d1d, #dc2626); }
-
-        .risk-category {
-            display: inline-block;
-            padding: 0.5rem 1.25rem;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 0.95rem;
+        .log-risk-marker {
+            position: absolute;
+            top: -5px;
+            width: 4px;
+            height: 40px;
+            background: var(--text);
+            border-radius: 2px;
+            transform: translateX(-50%);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            transition: left 0.8s ease;
         }
 
-        .category-low { background: #d1fae5; color: #065f46; }
-        .category-moderate { background: #fef3c7; color: #92400e; }
-        .category-high { background: #fee2e2; color: #991b1b; }
-        .category-very-high { background: #7f1d1d; color: white; }
+        .log-risk-marker::after {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid var(--text);
+        }
+
+        .log-risk-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            padding: 0 2px;
+        }
+
+        /* Risk Value Inline Styling */
+        .risk-statement {
+            font-size: 1.1rem;
+            color: var(--text);
+            margin-bottom: 1.5rem;
+        }
+
+        .risk-value-inline {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        /* Range indicator on bar */
+        .log-risk-range {
+            position: absolute;
+            top: -4px;
+            height: calc(100% + 8px);
+            background: transparent;
+            border-left: 3px solid var(--text);
+            border-right: 3px solid var(--text);
+            display: none;
+        }
+
+        .log-risk-range.open-ended::after {
+            content: '';
+            position: absolute;
+            right: -12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-left: 8px solid var(--text);
+        }
 
         .risk-breakdown {
             margin-top: 1.5rem;
@@ -366,6 +428,36 @@
 
         .factor-tag.minor {
             background: #6c757d;
+        }
+
+        /* Smoking Toggle Buttons */
+        .smoking-toggle {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border);
+            background: white;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text);
+        }
+
+        .toggle-btn:hover {
+            border-color: var(--primary);
+            background: #f0f9ff;
+        }
+
+        .toggle-btn.active {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: white;
         }
 
         /* Accordion Styles */
@@ -484,7 +576,7 @@
 <body>
     <header class="header">
         <h1>CPH-Lung Cancer Risk Calculator</h1>
-        <p>Copenhagen Lung Cancer Risk Model - Calculate your 6-year absolute risk of lung cancer based on clinical and blood test parameters</p>
+        <p>Calculate risk of developing lung cancer within the next 6 years</p>
     </header>
 
     <main class="container">
@@ -530,49 +622,40 @@
                     <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
                 <div class="card-body">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="smokingStatus">Smoking Status</label>
-                            <select id="smokingStatus" required>
-                                <option value="">Select...</option>
-                                <option value="never">Never Smoked</option>
-                                <option value="current">Current Smoker</option>
-                                <option value="former">Former Smoker</option>
-                            </select>
+                    <div class="form-group">
+                        <label>Smoking Status</label>
+                        <div class="smoking-toggle">
+                            <button type="button" class="toggle-btn" id="formerSmokerBtn" onclick="setSmokingStatus('former')">Ever Smoker</button>
+                            <button type="button" class="toggle-btn" id="currentSmokerBtn" onclick="setSmokingStatus('current')">Current Smoker</button>
                         </div>
-                        
-                        <div class="form-group" id="cessationGroup" style="display: none;">
-                            <label for="cessationYears">Years Since Quitting</label>
-                            <input type="number" id="cessationYears" min="0" max="80" step="0.1" placeholder="e.g., 5">
+                        <input type="hidden" id="smokingStatus" value="" required>
+                    </div>
+
+                    <div class="form-grid" style="margin-top: 1rem;">
+                        <div class="form-group">
+                            <label for="smokingStartAge">Start of Smoking (Age)</label>
+                            <input type="number" id="smokingStartAge" min="5" max="100" step="1" required placeholder="e.g., 18">
+                        </div>
+                        <div class="form-group">
+                            <label for="smokingIntensity">Smoking Intensity (cigarettes/day)</label>
+                            <input type="number" id="smokingIntensity" min="1" max="100" step="1" required placeholder="e.g., 20">
                         </div>
                     </div>
 
-                    <div id="packYearsSection" style="display: none; margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
-                        <div style="background: #f1f5f9; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
-                            <h4 style="font-size: 0.95rem; font-weight: 600; color: var(--primary); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-                                <svg style="width:16px; height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                                Pack-Year Calculator (Optional)
-                            </h4>
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label for="yearsSmoked" style="font-size: 0.85rem;">Years Smoked</label>
-                                    <input type="number" id="yearsSmoked" placeholder="e.g., 20">
-                                </div>
-                                <div class="form-group">
-                                    <label for="cigsPerDay" style="font-size: 0.85rem;">Avg. Cigarettes per Day</label>
-                                    <input type="number" id="cigsPerDay" placeholder="e.g., 15">
-                                </div>
-                            </div>
-                            <p class="hint">Entering values above will automatically calculate the Pack-Years below.</p>
+                    <div class="form-grid">
+                        <div class="form-group" id="cessationGroup" style="display: none;">
+                            <label for="smokingStopAge">Stop of Smoking (Age)</label>
+                            <input type="number" id="smokingStopAge" min="5" max="100" step="1" placeholder="e.g., 55">
                         </div>
+                    </div>
 
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="packYears">Total Pack-Years</label>
-                                <input type="number" id="packYears" min="0" max="200" step="0.1" required placeholder="e.g., 25">
-                                <p class="hint">1 pack-year = 20 cigarettes/day for 1 year</p>
-                            </div>
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <div style="background: #f1f5f9; padding: 1rem; border-radius: 8px;">
+                            <label style="font-size: 0.9rem; color: var(--text-muted);">Calculated Pack-Years</label>
+                            <div id="packYearsDisplay" style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">—</div>
+                            <p class="hint">Automatically calculated from smoking history</p>
                         </div>
+                        <input type="hidden" id="packYears" value="">
                     </div>
                 </div>
             </div>
@@ -595,9 +678,9 @@
 
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="ahrrMethylation">AHRR Methylation (%)</label>
-                            <input type="number" id="ahrrMethylation" min="1" max="100" step="1" placeholder="e.g., 55">
-                            <p class="hint">Value between 1-100 (no decimals)</p>
+                            <label for="ahrrMethylation">AHRR Methylation (%) *</label>
+                            <input type="number" id="ahrrMethylation" min="1" max="100" step="1" placeholder="e.g., 55" required>
+                            <p class="hint">Required. Value between 1-100 (no decimals)</p>
                         </div>
                     </div>
 
@@ -615,13 +698,13 @@
                                     <option value="mg/dL">mg/dL</option>
                                 </select>
                             </div>
-                            <p class="hint" id="crpHint">High risk: ≥4.20 mg/L</p>
+                            <p class="hint" id="crpHint">Range: 0.1-100 mg/L</p>
                         </div>
 
                         <div class="form-group">
                             <label for="monocytes">Monocyte Count (×10⁹/L) <span class="factor-tag major">Major</span></label>
                             <input type="number" id="monocytes" min="0" max="5" step="0.1" placeholder="e.g., 0.5">
-                            <p class="hint">Range: 0-5. High risk: >0.80</p>
+                            <p class="hint">Range: 0-5</p>
                         </div>
                     </div>
 
@@ -639,13 +722,13 @@
                                     <option value="g/dL">g/dL</option>
                                 </select>
                             </div>
-                            <p class="hint" id="hemoglobinHint">Low risk: >7.8 (M) / >7.5 (F) mmol/L</p>
+                            <p class="hint" id="hemoglobinHint">Range: 4-15 mmol/L</p>
                         </div>
 
                         <div class="form-group">
                             <label for="platelets">Platelet Count (×10⁹/L) <span class="factor-tag minor">Minor</span></label>
                             <input type="number" id="platelets" min="1" max="2000" step="1" placeholder="e.g., 250">
-                            <p class="hint">Range: 1-2000. High risk: >316</p>
+                            <p class="hint">Range: 1-2000</p>
                         </div>
 
                         <div class="form-group">
@@ -657,7 +740,7 @@
                                     <option value="mg/dL">mg/dL</option>
                                 </select>
                             </div>
-                            <p class="hint" id="calciumHint">High risk: >1.32 mmol/L</p>
+                            <p class="hint" id="calciumHint">Range: 0.5-3 mmol/L</p>
                         </div>
                     </div>
                 </div>
@@ -675,18 +758,26 @@
                     <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
                 <div class="card-body">
-                    <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="lowEducation">
-                            <label for="lowEducation">Low-intermediate education (no university/college degree) <span class="factor-tag minor">Minor</span></label>
-                        </div>
+                    <div class="form-group">
+                        <label for="education">Education (completed after leaving school)</label>
+                        <select id="education">
+                            <option value="">Select...</option>
+                            <option value="none">None</option>
+                            <option value="under">Under education</option>
+                            <option value="short">A short education (up to 3 years with books)</option>
+                            <option value="vocational">Vocational training or similar (1-3 years)</option>
+                            <option value="higher">Higher education (≥3 years, e.g. teacher, nurse or similar)</option>
+                            <option value="university">University</option>
+                        </select>
+                    </div>
+                    <div class="checkbox-group" style="margin-top: 1rem;">
                         <div class="checkbox-item">
                             <input type="checkbox" id="pneumonia">
-                            <label for="pneumonia">Pneumonia within last 10 years <span class="factor-tag minor">Minor</span></label>
+                            <label for="pneumonia">Patient had pneumonia within the last 10 years <span class="factor-tag minor">Minor</span></label>
                         </div>
                         <div class="checkbox-item">
                             <input type="checkbox" id="formerCancer">
-                            <label for="formerCancer">Personal history of cancer (any type) <span class="factor-tag minor">Minor</span></label>
+                            <label for="formerCancer">Patient has a history of cancer (any type) <span class="factor-tag minor">Minor</span></label>
                         </div>
                     </div>
                 </div>
@@ -702,18 +793,29 @@
             <div class="card">
                 <h2 class="card-title">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                    Your 6-Year Lung Cancer Risk
+                    6-Year Lung Cancer Risk
                 </h2>
 
                 <div class="risk-display">
-                    <div class="risk-value" id="riskValue">0%</div>
-                    <div class="risk-label">Absolute 6-Year Risk</div>
-
-                    <div class="risk-bar-container">
-                        <div class="risk-bar" id="riskBar" style="width: 0%"></div>
+                    <div class="risk-statement">
+                        Individual predicted absolute 6-year risk of lung cancer: <strong class="risk-value-inline" id="riskValue">0%</strong>
                     </div>
 
-                    <span class="risk-category" id="riskCategory">Low Risk</span>
+                    <div class="log-risk-bar-container">
+                        <div class="log-risk-bar" id="riskBar"></div>
+                        <div class="log-risk-range" id="riskRange"></div>
+                        <div class="log-risk-marker" id="riskMarker"></div>
+                    </div>
+                    <div class="log-risk-labels">
+                        <span>0.1%</span>
+                        <span>0.5%</span>
+                        <span>1%</span>
+                        <span>2%</span>
+                        <span>5%</span>
+                        <span>10%</span>
+                        <span>15%</span>
+                        <span>20%</span>
+                    </div>
                 </div>
 
                 <div class="risk-breakdown">
@@ -743,14 +845,6 @@
                         <span class="breakdown-value" id="totalRR">-</span>
                     </div>
                 </div>
-
-                <div class="info-box">
-                    <strong>Interpretation:</strong> This risk estimate represents your probability of being diagnosed with lung cancer within the next 6 years based on the CPH-Lung model. Risk thresholds commonly used: &lt;1% (low), 1-2% (moderate), 2-6% (high), &gt;6% (very high).
-                </div>
-
-                <div class="disclaimer">
-                    <strong>Important:</strong> This calculator is for educational purposes only and should not replace professional medical advice. Consult your healthcare provider for personalized risk assessment and screening recommendations.
-                </div>
             </div>
         </div>
     </main>
@@ -765,6 +859,64 @@
         function toggleCard(cardId) {
             const card = document.getElementById(cardId);
             card.classList.toggle('collapsed');
+            updateSummaries();
+        }
+
+        // Smoking Status Toggle
+        function setSmokingStatus(status) {
+            document.getElementById('smokingStatus').value = status;
+
+            // Update button styles
+            document.getElementById('formerSmokerBtn').classList.remove('active');
+            document.getElementById('currentSmokerBtn').classList.remove('active');
+
+            const stopAgeInput = document.getElementById('smokingStopAge');
+
+            if (status === 'former') {
+                document.getElementById('formerSmokerBtn').classList.add('active');
+                document.getElementById('cessationGroup').style.display = 'block';
+                stopAgeInput.required = true;
+            } else if (status === 'current') {
+                document.getElementById('currentSmokerBtn').classList.add('active');
+                document.getElementById('cessationGroup').style.display = 'none';
+                stopAgeInput.value = '';
+                stopAgeInput.required = false;
+            }
+
+            updatePackYearsFromHistory();
+            updateSummaries();
+        }
+
+        // Calculate Pack-Years from smoking history
+        function updatePackYearsFromHistory() {
+            const patientAge = parseFloat(document.getElementById('age').value);
+            const startAge = parseFloat(document.getElementById('smokingStartAge').value);
+            const intensity = parseFloat(document.getElementById('smokingIntensity').value);
+            const smokingStatus = document.getElementById('smokingStatus').value;
+            const stopAge = parseFloat(document.getElementById('smokingStopAge').value);
+
+            if (isNaN(startAge) || isNaN(intensity)) {
+                document.getElementById('packYearsDisplay').textContent = '—';
+                document.getElementById('packYears').value = '';
+                return;
+            }
+
+            let yearsSmoked = 0;
+            if (smokingStatus === 'current' && !isNaN(patientAge)) {
+                yearsSmoked = patientAge - startAge;
+            } else if (smokingStatus === 'former' && !isNaN(stopAge)) {
+                yearsSmoked = stopAge - startAge;
+            }
+
+            if (yearsSmoked > 0 && intensity > 0) {
+                const packYears = (intensity / 20) * yearsSmoked;
+                document.getElementById('packYearsDisplay').textContent = packYears.toFixed(1);
+                document.getElementById('packYears').value = packYears.toFixed(1);
+            } else {
+                document.getElementById('packYearsDisplay').textContent = '—';
+                document.getElementById('packYears').value = '';
+            }
+
             updateSummaries();
         }
 
@@ -792,18 +944,14 @@
             const packYears = document.getElementById('packYears').value;
             const smokingStatusVal = document.getElementById('smokingStatus').value;
             const smokingSummary = document.getElementById('smokingSummary');
-            
-            if (smokingStatusVal === 'never') {
-                smokingSummary.textContent = 'Never Smoked';
-                smokingSummary.className = 'card-summary complete';
-            } else if (packYears && smokingStatusVal) {
-                const statusText = smokingStatusVal === 'current' ? 'Current smoker' : 'Former smoker';
+
+            if (packYears && smokingStatusVal) {
+                const statusText = smokingStatusVal === 'current' ? 'Current smoker' : 'Ever smoker';
                 smokingSummary.textContent = `${packYears} pack-years, ${statusText}`;
                 smokingSummary.className = 'card-summary complete';
             } else if (smokingStatusVal) {
-                const statusText = smokingStatusVal === 'current' ? 'Current' : 'Former';
-                const pyText = packYears ? `${packYears} pack-years` : 'Pack-years needed';
-                smokingSummary.textContent = `${statusText}, ${pyText}`;
+                const statusText = smokingStatusVal === 'current' ? 'Current' : 'Ever smoker';
+                smokingSummary.textContent = `${statusText}, incomplete`;
                 smokingSummary.className = 'card-summary required';
             } else {
                 smokingSummary.textContent = 'Required';
@@ -820,60 +968,82 @@
             bloodSummary.className = filledBlood > 0 ? 'card-summary complete' : 'card-summary';
 
             // Medical history summary
-            const checks = ['lowEducation', 'pneumonia', 'formerCancer'];
-            const checkedCount = checks.filter(id => document.getElementById(id).checked).length;
+            const education = document.getElementById('education').value;
+            const pneumonia = document.getElementById('pneumonia').checked;
+            const formerCancer = document.getElementById('formerCancer').checked;
+            let factorCount = 0;
+            if (education) factorCount++;
+            if (pneumonia) factorCount++;
+            if (formerCancer) factorCount++;
             const medSummary = document.getElementById('medicalHistorySummary');
-            medSummary.textContent = checkedCount > 0
-                ? `${checkedCount} selected`
+            medSummary.textContent = factorCount > 0
+                ? `${factorCount} entered`
                 : 'Optional - 3 factors';
-            medSummary.className = checkedCount > 0 ? 'card-summary complete' : 'card-summary';
+            medSummary.className = factorCount > 0 ? 'card-summary complete' : 'card-summary';
         }
 
         // Logic for Dynamic Unit Configuration
-        // This function updates the placeholder and step attributes based on unit selection
+        // Ranges are from the email specification
         function updateInputConfig() {
-            // Hemoglobin
+            // Hemoglobin - Range: 4-15 (mmol/L), 2-10 (g/dL)
             const hgbUnit = document.getElementById('hemoglobinUnit').value;
             const hgbInput = document.getElementById('hemoglobin');
+            const hgbHint = document.getElementById('hemoglobinHint');
             if(hgbUnit === 'mmol/L') {
                 hgbInput.placeholder = "e.g., 8.5";
                 hgbInput.step = "0.1";
+                hgbInput.min = "4";
+                hgbInput.max = "15";
+                hgbHint.textContent = "Range: 4-15 mmol/L";
             } else { // g/dL
                 hgbInput.placeholder = "e.g., 14.0";
                 hgbInput.step = "0.1";
+                hgbInput.min = "2";
+                hgbInput.max = "25";
+                hgbHint.textContent = "Range: 2-25 g/dL";
             }
 
-            // CRP
+            // CRP - Range: 0.5-100 (mg/L), 0.05-10 (mg/dL)
             const crpUnit = document.getElementById('crpUnit').value;
             const crpInput = document.getElementById('crp');
+            const crpHint = document.getElementById('crpHint');
             if(crpUnit === 'mg/L') {
                 crpInput.placeholder = "e.g., 2.5";
                 crpInput.step = "0.1";
+                crpInput.min = "0.5";
+                crpInput.max = "100";
+                crpHint.textContent = "Range: 0.5-100 mg/L";
             } else { // mg/dL
                 crpInput.placeholder = "e.g., 0.25";
                 crpInput.step = "0.01";
+                crpInput.min = "0.05";
+                crpInput.max = "10";
+                crpHint.textContent = "Range: 0.05-10 mg/dL";
             }
 
-            // Calcium
+            // Calcium - Range: 0.5-3 (mmol/L), 2-12 (mg/dL)
             const caUnit = document.getElementById('calciumUnit').value;
             const caInput = document.getElementById('calcium');
+            const caHint = document.getElementById('calciumHint');
             if(caUnit === 'mmol/L') {
                 caInput.placeholder = "e.g., 1.25";
                 caInput.step = "0.01";
+                caInput.min = "0.5";
+                caInput.max = "3";
+                caHint.textContent = "Range: 0.5-3 mmol/L";
             } else { // mg/dL
                 caInput.placeholder = "e.g., 5.0";
                 caInput.step = "0.1";
+                caInput.min = "2";
+                caInput.max = "12";
+                caHint.textContent = "Range: 2-12 mg/dL";
             }
         }
 
         // DOM Elements for Logic
         const form = document.getElementById('riskForm');
-        const smokingStatus = document.getElementById('smokingStatus');
         const cessationGroup = document.getElementById('cessationGroup');
-        const packYearsSection = document.getElementById('packYearsSection');
         const results = document.getElementById('results');
-        const yearsSmokedInput = document.getElementById('yearsSmoked');
-        const cigsPerDayInput = document.getElementById('cigsPerDay');
         const packYearsInput = document.getElementById('packYears');
 
         // Add Listeners for Unit Changes
@@ -881,47 +1051,11 @@
         document.getElementById('crpUnit').addEventListener('change', updateInputConfig);
         document.getElementById('calciumUnit').addEventListener('change', updateInputConfig);
 
-        // Smoking Logic (Visibility)
-        smokingStatus.addEventListener('change', function() {
-            const status = this.value;
-            if (status === 'never') {
-                packYearsSection.style.display = 'none';
-                cessationGroup.style.display = 'none';
-                packYearsInput.required = false;
-                document.getElementById('cessationYears').required = false;
-                packYearsInput.value = '';
-                document.getElementById('cessationYears').value = '';
-            } else {
-                if (status === 'current' || status === 'former') {
-                    packYearsSection.style.display = 'block';
-                    packYearsInput.required = true;
-                } else {
-                    packYearsSection.style.display = 'none';
-                }
-                if (status === 'former') {
-                    cessationGroup.style.display = 'block';
-                    document.getElementById('cessationYears').required = true;
-                } else {
-                    cessationGroup.style.display = 'none';
-                    document.getElementById('cessationYears').required = false;
-                    document.getElementById('cessationYears').value = '';
-                }
-            }
-            updateSummaries();
-        });
-
-        // Pack-Year Calculator Logic
-        function calculatePackYears() {
-            const years = parseFloat(yearsSmokedInput.value);
-            const cigs = parseFloat(cigsPerDayInput.value);
-            if (!isNaN(years) && !isNaN(cigs) && years > 0 && cigs > 0) {
-                const result = (cigs / 20) * years;
-                packYearsInput.value = result.toFixed(1);
-                updateSummaries();
-            }
-        }
-        yearsSmokedInput.addEventListener('input', calculatePackYears);
-        cigsPerDayInput.addEventListener('input', calculatePackYears);
+        // Add listeners for smoking history fields
+        document.getElementById('age').addEventListener('input', updatePackYearsFromHistory);
+        document.getElementById('smokingStartAge').addEventListener('input', updatePackYearsFromHistory);
+        document.getElementById('smokingIntensity').addEventListener('input', updatePackYearsFromHistory);
+        document.getElementById('smokingStopAge').addEventListener('input', updatePackYearsFromHistory);
 
         // General Updates
         document.addEventListener('input', updateSummaries);
@@ -962,10 +1096,18 @@
 
         function getAHRRCategory(methylation) {
             if (methylation === null || methylation === '') return null;
+            // Paper categories (Supplementary Table 4):
+            // High: >63.5%, High-intermediate: 50.6-63.5%, Low-intermediate: 42.1-50.5%, Low: <42.1%
             if (methylation > 63.5) return 'high';
-            if (methylation > 50.5) return 'highIntermediate';
-            if (methylation > 42.1) return 'lowIntermediate';
+            if (methylation >= 50.6) return 'highIntermediate';
+            if (methylation >= 42.1) return 'lowIntermediate';
             return 'low';
+        }
+
+        // Check if education is a risk factor (low-intermediate)
+        function isLowEducation(educationValue) {
+            // Risk factors: none, under education, short education, vocational
+            return ['none', 'under', 'short', 'vocational'].includes(educationValue);
         }
 
         function calculateRisk(data) {
@@ -976,60 +1118,223 @@
             const packYearsCategory = getPackYearsCategory(data.packYears);
             const packYearsOR = ODDS_RATIOS.packYears[packYearsCategory];
 
+            // AHRR is required, so it should always have a value
             let ahrrOR = 1.0;
             const ahrrCategory = getAHRRCategory(data.ahrrMethylation);
-            if (ahrrCategory) ahrrOR = ODDS_RATIOS.ahrrMethylation[ahrrCategory];
+            if (ahrrCategory) {
+                ahrrOR = ODDS_RATIOS.ahrrMethylation[ahrrCategory];
+            }
 
+            // Calculate cessation years from patient age and stop age
             let cessationYears = 0;
-            if (data.smokingStatus === 'former') cessationYears = data.cessationYears || 0;
-            else if (data.smokingStatus === 'never') cessationYears = 99;
-            
-            const cessationOR = cessationYears <= 2 && data.smokingStatus !== 'never' 
+            if (data.smokingStatus === 'former' && data.stopAge && data.patientAge) {
+                cessationYears = data.patientAge - data.stopAge;
+            }
+            // Current smokers get 0 cessation years
+
+            const cessationOR = cessationYears <= 2
                 ? ODDS_RATIOS.cessation.short : ODDS_RATIOS.cessation.long;
 
-            let majorOR = 1.0, majorCount = 0;
-            if (data.crp !== null && data.crp >= 4.20) { majorOR *= ODDS_RATIOS.crp.high; majorCount++; }
-            if (data.monocytes !== null && data.monocytes > 0.80) { majorOR *= ODDS_RATIOS.monocytes.high; majorCount++; }
+            // Track missing blood parameters and their potential ORs
+            let missingParams = [];
 
+            // Major factors
+            let majorOR = 1.0, majorCount = 0;
+            if (data.crp === null) {
+                missingParams.push({ name: 'crp', or: ODDS_RATIOS.crp.high });
+            } else if (data.crp >= 4.20) {
+                majorOR *= ODDS_RATIOS.crp.high;
+                majorCount++;
+            }
+
+            if (data.monocytes === null) {
+                missingParams.push({ name: 'monocytes', or: ODDS_RATIOS.monocytes.high });
+            } else if (data.monocytes > 0.80) {
+                majorOR *= ODDS_RATIOS.monocytes.high;
+                majorCount++;
+            }
+
+            // Minor factors (non-blood)
             let minorOR = 1.0, minorCount = 0;
             if (data.lowEducation) { minorOR *= ODDS_RATIOS.education.lowIntermediate; minorCount++; }
             if (data.pneumonia) { minorOR *= ODDS_RATIOS.pneumonia.yes; minorCount++; }
             if (data.formerCancer) { minorOR *= ODDS_RATIOS.formerCancer.yes; minorCount++; }
 
-            if (data.hemoglobin !== null) {
-                const hemoglobinThreshold = sex === 'male' ? 7.8 : 7.5;
-                if (data.hemoglobin <= hemoglobinThreshold) { minorOR *= ODDS_RATIOS.hemoglobin.low; minorCount++; }
+            // Minor factors (blood)
+            const hemoglobinThreshold = sex === 'male' ? 7.8 : 7.5;
+            if (data.hemoglobin === null) {
+                missingParams.push({ name: 'hemoglobin', or: ODDS_RATIOS.hemoglobin.low });
+            } else if (data.hemoglobin <= hemoglobinThreshold) {
+                minorOR *= ODDS_RATIOS.hemoglobin.low;
+                minorCount++;
             }
 
-            if (data.platelets !== null && data.platelets > 316) { minorOR *= ODDS_RATIOS.platelets.high; minorCount++; }
-            if (data.calcium !== null && data.calcium > 1.32) { minorOR *= ODDS_RATIOS.calcium.high; minorCount++; }
+            if (data.platelets === null) {
+                missingParams.push({ name: 'platelets', or: ODDS_RATIOS.platelets.high });
+            } else if (data.platelets > 316) {
+                minorOR *= ODDS_RATIOS.platelets.high;
+                minorCount++;
+            }
+
+            if (data.calcium === null) {
+                missingParams.push({ name: 'calcium', or: ODDS_RATIOS.calcium.high });
+            } else if (data.calcium > 1.32) {
+                minorOR *= ODDS_RATIOS.calcium.high;
+                minorCount++;
+            }
+
+            // Calculate base risk (with all known values, missing = favorable OR 1.0)
+            const baseOR = packYearsOR * ahrrOR * cessationOR * majorOR * minorOR;
+            const minRisk = baselineRisk * baseOR;
+
+            // Calculate max risk (missing values use their unfavorable OR)
+            let maxOR = baseOR;
+            for (const param of missingParams) {
+                if (param.name === 'ahrr') {
+                    // AHRR was already set to 1.0, multiply by worst case
+                    maxOR *= param.or;
+                } else {
+                    maxOR *= param.or;
+                }
+            }
+            const maxRisk = baselineRisk * maxOR;
 
             const totalRR = packYearsOR * ahrrOR * cessationOR * majorOR * minorOR;
-            const absoluteRisk = baselineRisk * totalRR;
 
             return {
                 baselineRisk, packYearsOR, ahrrOR, cessationOR, majorOR, majorCount,
-                minorOR, minorCount, totalRR, absoluteRisk: Math.min(absoluteRisk, 100)
+                minorOR, minorCount, totalRR,
+                absoluteRisk: Math.min(minRisk, 100),
+                absoluteRiskMax: Math.min(maxRisk, 100),
+                missingCount: missingParams.length,
+                missingParams: missingParams.map(p => p.name)
             };
         }
 
+        // Convert risk percentage to logarithmic bar position
+        // Scale: 0.1% -> 0%, 20% -> 100%
+        // Using logarithmic scale with key points: 0.1, 0.5, 1, 2, 5, 10, 15, 20
+        function riskToLogPosition(riskPercent) {
+            // Define the scale points and their positions
+            const scalePoints = [
+                { risk: 0.1, pos: 0 },
+                { risk: 0.5, pos: 14.28 },
+                { risk: 1, pos: 28.57 },
+                { risk: 2, pos: 42.86 },
+                { risk: 5, pos: 57.14 },
+                { risk: 10, pos: 71.43 },
+                { risk: 15, pos: 85.71 },
+                { risk: 20, pos: 100 }
+            ];
+
+            if (riskPercent <= 0.1) return 0;
+            if (riskPercent >= 20) return 100;
+
+            // Find the two points to interpolate between
+            for (let i = 0; i < scalePoints.length - 1; i++) {
+                if (riskPercent >= scalePoints[i].risk && riskPercent <= scalePoints[i+1].risk) {
+                    const logLow = Math.log10(scalePoints[i].risk);
+                    const logHigh = Math.log10(scalePoints[i+1].risk);
+                    const logRisk = Math.log10(riskPercent);
+                    const ratio = (logRisk - logLow) / (logHigh - logLow);
+                    return scalePoints[i].pos + ratio * (scalePoints[i+1].pos - scalePoints[i].pos);
+                }
+            }
+            return 100;
+        }
+
+        function formatRiskValue(riskPercent) {
+            if (riskPercent >= 20) {
+                return '>20.0%';
+            } else if (riskPercent < 0.01) {
+                return riskPercent.toFixed(4) + '%';
+            } else if (riskPercent < 0.1) {
+                return riskPercent.toFixed(3) + '%';
+            } else if (riskPercent < 1) {
+                return riskPercent.toFixed(2) + '%';
+            } else {
+                return riskPercent.toFixed(1) + '%';
+            }
+        }
+
         function displayResults(result) {
-            const riskPercent = result.absoluteRisk;
-            document.getElementById('riskValue').textContent = riskPercent < 0.1 ? riskPercent.toFixed(3) + '%' : riskPercent.toFixed(1) + '%';
-            
-            const riskBar = document.getElementById('riskBar');
-            riskBar.style.width = Math.min(riskPercent * 5, 100) + '%';
+            const riskMin = result.absoluteRisk;
+            const riskMax = result.absoluteRiskMax;
+            const missingCount = result.missingCount;
 
-            let categoryClass, categoryText, barClass;
-            if (riskPercent < 1) { categoryClass = 'category-low'; categoryText = 'Low Risk'; barClass = 'risk-low'; }
-            else if (riskPercent < 2) { categoryClass = 'category-moderate'; categoryText = 'Moderate Risk'; barClass = 'risk-moderate'; }
-            else if (riskPercent < 6) { categoryClass = 'category-high'; categoryText = 'High Risk'; barClass = 'risk-high'; }
-            else { categoryClass = 'category-very-high'; categoryText = 'Very High Risk'; barClass = 'risk-very-high'; }
+            const riskValueEl = document.getElementById('riskValue');
 
-            riskBar.className = 'risk-bar ' + barClass;
-            const riskCategory = document.getElementById('riskCategory');
-            riskCategory.className = 'risk-category ' + categoryClass;
-            riskCategory.textContent = categoryText;
+            // Check if too many blood parameters are missing
+            if (missingCount > 2) {
+                riskValueEl.innerHTML = '<span style="color: #dc3545;">Too many missing values</span>';
+                document.getElementById('riskMarker').style.display = 'none';
+
+                // Show warning about missing parameters
+                const missingNames = {
+                    'crp': 'CRP',
+                    'monocytes': 'Monocyte Count',
+                    'hemoglobin': 'Hemoglobin',
+                    'platelets': 'Platelet Count',
+                    'calcium': 'Ionized Calcium'
+                };
+                const missingList = result.missingParams.map(p => missingNames[p] || p).join(', ');
+                document.getElementById('baselineRisk').textContent = 'Max 2 blood parameters may be missing';
+                document.getElementById('ahrrMultiplier').textContent = 'Missing: ' + missingList;
+                document.getElementById('packYearsMultiplier').textContent = '-';
+                document.getElementById('majorFactors').textContent = '-';
+                document.getElementById('minorFactors').textContent = '-';
+                document.getElementById('totalRR').textContent = '-';
+
+                results.classList.add('visible');
+                results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return;
+            }
+
+            // Display risk value - show range if there are missing parameters
+            if (missingCount > 0 && riskMin !== riskMax) {
+                // Handle edge cases for >20% display
+                if (riskMin >= 20 && riskMax >= 20) {
+                    // Both are >20%, just show single value
+                    riskValueEl.textContent = '>20.0%';
+                } else if (riskMax >= 20) {
+                    // Only max is >20%
+                    riskValueEl.textContent = formatRiskValue(riskMin) + ' to >20.0%';
+                } else {
+                    // Normal range
+                    riskValueEl.textContent = formatRiskValue(riskMin) + ' to ' + formatRiskValue(riskMax);
+                }
+            } else {
+                riskValueEl.textContent = formatRiskValue(riskMin);
+            }
+
+            // Position the marker and range on the bar
+            const riskMarker = document.getElementById('riskMarker');
+            const riskRange = document.getElementById('riskRange');
+
+            if (missingCount > 0 && riskMin !== riskMax && riskMin < 20) {
+                // Show range indicator on bar, hide marker (only if min is below 20%)
+                const minPos = riskToLogPosition(riskMin);
+                const maxPos = riskToLogPosition(riskMax);
+                riskRange.style.display = 'block';
+                riskRange.style.left = minPos + '%';
+                riskRange.style.width = (maxPos - minPos) + '%';
+
+                // If max exceeds 20%, add arrow to indicate open-ended range
+                if (riskMax >= 20) {
+                    riskRange.classList.add('open-ended');
+                } else {
+                    riskRange.classList.remove('open-ended');
+                }
+
+                riskMarker.style.display = 'none';
+            } else {
+                // Single value or both values >= 20% - hide range, show marker
+                riskRange.style.display = 'none';
+                riskRange.classList.remove('open-ended');
+                riskMarker.style.display = 'block';
+                const markerPos = riskToLogPosition(riskMin);
+                riskMarker.style.left = markerPos + '%';
+            }
 
             document.getElementById('baselineRisk').textContent = result.baselineRisk.toFixed(4) + '%';
             document.getElementById('ahrrMultiplier').textContent = '×' + result.ahrrOR.toFixed(2);
@@ -1045,11 +1350,18 @@
         form.addEventListener('submit', function(e) {
             e.preventDefault();
 
+            // Validate smoking status is selected
+            const smokingStatus = document.getElementById('smokingStatus').value;
+            if (!smokingStatus) {
+                alert('Please select a smoking status (Ever Smoker or Current Smoker)');
+                return;
+            }
+
             // 1. Get raw values
             let hgbRaw = document.getElementById('hemoglobin').value ? parseFloat(document.getElementById('hemoglobin').value) : null;
             let crpRaw = document.getElementById('crp').value ? parseFloat(document.getElementById('crp').value) : null;
             let caRaw = document.getElementById('calcium').value ? parseFloat(document.getElementById('calcium').value) : null;
-            
+
             // 2. Perform Unit Conversions to Standard Model Units
             // Hemoglobin: Standard is mmol/L
             const hgbUnit = document.getElementById('hemoglobinUnit').value;
@@ -1074,19 +1386,23 @@
             const pyInput = document.getElementById('packYears').value;
             if (pyInput) packYearsVal = parseFloat(pyInput);
 
+            // Education
+            const educationVal = document.getElementById('education').value;
+
             const data = {
                 sex: document.getElementById('sex').value,
                 age: parseFloat(document.getElementById('age').value),
+                patientAge: parseFloat(document.getElementById('age').value),
                 packYears: packYearsVal,
-                smokingStatus: document.getElementById('smokingStatus').value,
-                cessationYears: parseFloat(document.getElementById('cessationYears').value) || 0,
+                smokingStatus: smokingStatus,
+                stopAge: parseFloat(document.getElementById('smokingStopAge').value) || null,
                 ahrrMethylation: document.getElementById('ahrrMethylation').value ? parseFloat(document.getElementById('ahrrMethylation').value) : null,
                 crp: crpRaw,
                 monocytes: document.getElementById('monocytes').value ? parseFloat(document.getElementById('monocytes').value) : null,
                 hemoglobin: hgbRaw,
                 platelets: document.getElementById('platelets').value ? parseFloat(document.getElementById('platelets').value) : null,
                 calcium: caRaw,
-                lowEducation: document.getElementById('lowEducation').checked,
+                lowEducation: isLowEducation(educationVal),
                 pneumonia: document.getElementById('pneumonia').checked,
                 formerCancer: document.getElementById('formerCancer').checked
             };
