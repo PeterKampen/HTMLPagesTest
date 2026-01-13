@@ -625,7 +625,7 @@
                     <div class="form-group">
                         <label>Smoking Status</label>
                         <div class="smoking-toggle">
-                            <button type="button" class="toggle-btn" id="formerSmokerBtn" onclick="setSmokingStatus('former')">Ever Smoker</button>
+                            <button type="button" class="toggle-btn" id="formerSmokerBtn" onclick="setSmokingStatus('former')">Former Smoker</button>
                             <button type="button" class="toggle-btn" id="currentSmokerBtn" onclick="setSmokingStatus('current')">Current Smoker</button>
                         </div>
                         <input type="hidden" id="smokingStatus" value="" required>
@@ -667,7 +667,7 @@
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
                             Blood Test Results
                         </h2>
-                        <span class="card-summary" id="bloodTestsSummary">Optional - 6 fields</span>
+                        <span class="card-summary required" id="bloodTestsSummary">AHRR required</span>
                     </div>
                     <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
@@ -808,13 +808,13 @@
                     </div>
                     <div class="log-risk-labels">
                         <span>0.1%</span>
+                        <span>0.25%</span>
                         <span>0.5%</span>
                         <span>1%</span>
                         <span>2%</span>
-                        <span>5%</span>
+                        <span>4%</span>
+                        <span>7%</span>
                         <span>10%</span>
-                        <span>15%</span>
-                        <span>20%</span>
                     </div>
                 </div>
 
@@ -946,11 +946,11 @@
             const smokingSummary = document.getElementById('smokingSummary');
 
             if (packYears && smokingStatusVal) {
-                const statusText = smokingStatusVal === 'current' ? 'Current smoker' : 'Ever smoker';
+                const statusText = smokingStatusVal === 'current' ? 'Current smoker' : 'Former smoker';
                 smokingSummary.textContent = `${packYears} pack-years, ${statusText}`;
                 smokingSummary.className = 'card-summary complete';
             } else if (smokingStatusVal) {
-                const statusText = smokingStatusVal === 'current' ? 'Current' : 'Ever smoker';
+                const statusText = smokingStatusVal === 'current' ? 'Current' : 'Former smoker';
                 smokingSummary.textContent = `${statusText}, incomplete`;
                 smokingSummary.className = 'card-summary required';
             } else {
@@ -959,13 +959,20 @@
             }
 
             // Blood tests summary
-            const bloodFields = ['ahrrMethylation', 'crp', 'monocytes', 'hemoglobin', 'platelets', 'calcium'];
-            const filledBlood = bloodFields.filter(id => document.getElementById(id).value).length;
+            const ahrrFilled = document.getElementById('ahrrMethylation').value;
+            const optionalFields = ['crp', 'monocytes', 'hemoglobin', 'platelets', 'calcium'];
+            const filledOptional = optionalFields.filter(id => document.getElementById(id).value).length;
             const bloodSummary = document.getElementById('bloodTestsSummary');
-            bloodSummary.textContent = filledBlood > 0
-                ? `${filledBlood} of 6 entered`
-                : 'Optional - 6 fields';
-            bloodSummary.className = filledBlood > 0 ? 'card-summary complete' : 'card-summary';
+            if (!ahrrFilled) {
+                bloodSummary.textContent = 'AHRR required';
+                bloodSummary.className = 'card-summary required';
+            } else if (filledOptional > 0) {
+                bloodSummary.textContent = `AHRR + ${filledOptional} optional`;
+                bloodSummary.className = 'card-summary complete';
+            } else {
+                bloodSummary.textContent = 'AHRR entered';
+                bloodSummary.className = 'card-summary complete';
+            }
 
             // Medical history summary
             const education = document.getElementById('education').value;
@@ -1212,23 +1219,23 @@
         }
 
         // Convert risk percentage to logarithmic bar position
-        // Scale: 0.1% -> 0%, 20% -> 100%
-        // Using logarithmic scale with key points: 0.1, 0.5, 1, 2, 5, 10, 15, 20
+        // Scale: 0.1% -> 0%, 10% -> 100%
+        // Using logarithmic scale with key points: 0.1, 0.25, 0.5, 1, 2, 4, 7, 10
         function riskToLogPosition(riskPercent) {
             // Define the scale points and their positions
             const scalePoints = [
                 { risk: 0.1, pos: 0 },
-                { risk: 0.5, pos: 14.28 },
-                { risk: 1, pos: 28.57 },
-                { risk: 2, pos: 42.86 },
-                { risk: 5, pos: 57.14 },
-                { risk: 10, pos: 71.43 },
-                { risk: 15, pos: 85.71 },
-                { risk: 20, pos: 100 }
+                { risk: 0.25, pos: 14.28 },
+                { risk: 0.5, pos: 28.57 },
+                { risk: 1, pos: 42.86 },
+                { risk: 2, pos: 57.14 },
+                { risk: 4, pos: 71.43 },
+                { risk: 7, pos: 85.71 },
+                { risk: 10, pos: 100 }
             ];
 
             if (riskPercent <= 0.1) return 0;
-            if (riskPercent >= 20) return 100;
+            if (riskPercent >= 10) return 100;
 
             // Find the two points to interpolate between
             for (let i = 0; i < scalePoints.length - 1; i++) {
@@ -1244,8 +1251,8 @@
         }
 
         function formatRiskValue(riskPercent) {
-            if (riskPercent >= 20) {
-                return '>20.0%';
+            if (riskPercent >= 10) {
+                return '>10.0%';
             } else if (riskPercent < 0.01) {
                 return riskPercent.toFixed(4) + '%';
             } else if (riskPercent < 0.1) {
@@ -1292,13 +1299,13 @@
 
             // Display risk value - show range if there are missing parameters
             if (missingCount > 0 && riskMin !== riskMax) {
-                // Handle edge cases for >20% display
-                if (riskMin >= 20 && riskMax >= 20) {
-                    // Both are >20%, just show single value
-                    riskValueEl.textContent = '>20.0%';
-                } else if (riskMax >= 20) {
-                    // Only max is >20%
-                    riskValueEl.textContent = formatRiskValue(riskMin) + ' to >20.0%';
+                // Handle edge cases for >10% display
+                if (riskMin >= 10 && riskMax >= 10) {
+                    // Both are >10%, just show single value
+                    riskValueEl.textContent = '>10.0%';
+                } else if (riskMax >= 10) {
+                    // Only max is >10%
+                    riskValueEl.textContent = formatRiskValue(riskMin) + ' to >10.0%';
                 } else {
                     // Normal range
                     riskValueEl.textContent = formatRiskValue(riskMin) + ' to ' + formatRiskValue(riskMax);
@@ -1311,16 +1318,16 @@
             const riskMarker = document.getElementById('riskMarker');
             const riskRange = document.getElementById('riskRange');
 
-            if (missingCount > 0 && riskMin !== riskMax && riskMin < 20) {
-                // Show range indicator on bar, hide marker (only if min is below 20%)
+            if (missingCount > 0 && riskMin !== riskMax && riskMin < 10) {
+                // Show range indicator on bar, hide marker (only if min is below 10%)
                 const minPos = riskToLogPosition(riskMin);
                 const maxPos = riskToLogPosition(riskMax);
                 riskRange.style.display = 'block';
                 riskRange.style.left = minPos + '%';
                 riskRange.style.width = (maxPos - minPos) + '%';
 
-                // If max exceeds 20%, add arrow to indicate open-ended range
-                if (riskMax >= 20) {
+                // If max exceeds 10%, add arrow to indicate open-ended range
+                if (riskMax >= 10) {
                     riskRange.classList.add('open-ended');
                 } else {
                     riskRange.classList.remove('open-ended');
@@ -1328,7 +1335,7 @@
 
                 riskMarker.style.display = 'none';
             } else {
-                // Single value or both values >= 20% - hide range, show marker
+                // Single value or both values >= 10% - hide range, show marker
                 riskRange.style.display = 'none';
                 riskRange.classList.remove('open-ended');
                 riskMarker.style.display = 'block';
@@ -1353,7 +1360,7 @@
             // Validate smoking status is selected
             const smokingStatus = document.getElementById('smokingStatus').value;
             if (!smokingStatus) {
-                alert('Please select a smoking status (Ever Smoker or Current Smoker)');
+                alert('Please select a smoking status (Former Smoker or Current Smoker)');
                 return;
             }
 
